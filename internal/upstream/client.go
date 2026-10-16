@@ -1802,11 +1802,12 @@ type CreditPackage struct {
 // 周期字段算，否则按 Capacity 字段算——两条路径不能混，否则同一个包会被算两次。
 func (c *Client) CreditPackages(a *auth.Auth) ([]CreditPackage, int64, int64, error) {
 	now := time.Now()
+	// 不按 ProductCode/Status 过滤：官方积分页存在 p_tcaca 之外的短效包
+	// （活动/签到包，ProductCode 不同或 Status 超出 {0,3}），写死会漏掉「今天到期」
+	// 的批次导致 earliest 失真；时间窗本身已排除历史包。
 	body := map[string]any{
 		"PageNumber":               1,
 		"PageSize":                 100,
-		"ProductCode":              "p_tcaca",
-		"Status":                   []int{0, 3},
 		"PackageEndTimeRangeBegin": now.Format(packageEndLayout),
 		"PackageEndTimeRangeEnd":   now.Add(365 * 101 * 24 * time.Hour).Format(packageEndLayout),
 	}
@@ -2055,11 +2056,12 @@ func (c *Client) UserResourceDetailedWithExpiry(a *auth.Auth, soon time.Duration
 		return c.enterpriseResource(a, soon)
 	}
 	now := time.Now()
+	// 不按 ProductCode/Status 过滤：官方积分页存在 p_tcaca 之外的短效包
+	// （活动/签到包，ProductCode 不同或 Status 超出 {0,3}），写死会漏掉「今天到期」
+	// 的批次导致 earliest 失真；时间窗本身已排除历史包。
 	body := map[string]any{
 		"PageNumber":               1,
 		"PageSize":                 100,
-		"ProductCode":              "p_tcaca",
-		"Status":                   []int{0, 3},
 		"PackageEndTimeRangeBegin": now.Format(packageEndLayout),
 		"PackageEndTimeRangeEnd":   now.Add(365 * 101 * 24 * time.Hour).Format(packageEndLayout),
 	}
